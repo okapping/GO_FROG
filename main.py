@@ -331,6 +331,8 @@ class Game:
     def __update_play(self):
 
         if self.game_over:
+            if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+                self.__game_init()
             if pyxel.btnp(pyxel.KEY_RETURN):
                 self.__game_init()
             return
@@ -349,10 +351,6 @@ class Game:
                 if all(abs(e - new_x) > 16 for e in new_rock_x):
                     Rock(self, new_x)
                     new_rock_x.append(new_x)
-            # for _ in range(self.rock_same_apper_count):
-            #     new_x = pyxel.rndi(0, pyxel.width - 1)
-            #     if any(abs(e - new_x) == 16 for e in new_rock_x
-            #     Rock(self, pyxel.rndi(0, pyxel.width - 1))
             
             # 難易度調整
             if int(self.traveled_distance) < 1:
@@ -435,9 +433,6 @@ class Game:
         offset = offset_list[(pyxel.frame_count // 30) % 4]
         pyxel.blt(pyxel.width / 2 - size_x / 2, offset, 1, 0, 0, size_x, size_y, 12)
         pyxel.dither(1)
-        # pyxel.rect(pyxel.width / 2 - size_x / 2, 40, size_x, size_y, 1)
-        # msg = "GO FROG"
-        # pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), pyxel.height / 2 - 10, msg, 7)
 
         msg = "enter to start"
         pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), 100, msg, 1)
