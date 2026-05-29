@@ -65,9 +65,9 @@ class Scene(Enum):
 
 class Rock:
 
-    def __init__(self, game):
+    def __init__(self, game, x):
         self.game = game
-        self.x = pyxel.rndi(0, pyxel.width - 1)
+        self.x = x
         self.y = -16
         self.game.rocks.append(self)
 
@@ -76,6 +76,15 @@ class Rock:
 
     def draw(self):
         pyxel.blt(self.x, self.y, 0, 16, 16, 16, 16, 12)
+
+        frame = pyxel.frame_count // 4 % 2
+        if frame:
+            pyxel.blt(self.x, self.y+8, 0, 16, 32, 16, 8, 7)
+        else:
+            pyxel.blt(self.x, self.y+8, 0, 16, 40, 16, 8, 7)
+    
+    def get_hit_area(self):
+        return (self.x + 1, self.y + 8, 14, 5)
 
 class Player:
     # JUMP_X = 
@@ -112,8 +121,16 @@ class Player:
         self.game.player = self
 
     def update(self):
+        click_left = False
+        click_right = False
+        if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+            if pyxel.mouse_x < pyxel.width / 2:
+                click_left = True
+            if pyxel.mouse_x > pyxel.width / 2:
+                click_right = True
+
         # 入力共通
-        if pyxel.btnp(pyxel.KEY_RIGHT) or pyxel.btnp(pyxel.KEY_LEFT):
+        if pyxel.btnp(pyxel.KEY_RIGHT) or pyxel.btnp(pyxel.KEY_LEFT) or click_right or click_left:
             self.vx = self.MAX_X_SPEED
             self.vy = self.MAX_Y_SPEED
 
@@ -123,12 +140,13 @@ class Player:
             # 水の輪っかを追加
             self.rings.append((self.x+8, self.y+8, 5))
 
+    
         # 右入力
-        if pyxel.btnp(pyxel.KEY_RIGHT):
+        if pyxel.btnp(pyxel.KEY_RIGHT) or click_right:
             self.is_jumping_dir = self.JDIR_RIGTH
 
         # 左入力
-        if pyxel.btnp(pyxel.KEY_LEFT):
+        if pyxel.btnp(pyxel.KEY_LEFT) or click_left:
             self.is_jumping_dir = self.JDIR_LEFT
 
         # LIMIT_LINEより前には行けないようにする
@@ -257,35 +275,38 @@ class Game:
     def __init__(self):
         pyxel.init(self.WIDTH, self.HEIGHT, title="GO FROG")
 
-        # pyxel.load("asset.pyxres")
         pyxel.load("asset.pyxres")
 
+        self.scene = None
         self.background = None
 
-        # シーン
-        self.scene = None
-
-        # 
+        # プレイヤーを定義
         self.player = None
-        self.enemys = []
+        # self.enemys = []
 
-        # 岩関係
-        self.rocks = []
-        self.rock_interval = 100
-        self.rock_same_apper_count = 2
-        self.last_rock = 0
-
-        # 川の流れ関係
-        self.traveled_distance = 0
-        self.flow_speed = 0.5
-        self.flow_increase = 0
-
-        Background(self)
-        Player(self)
+        # ゲームの初期化
+        self.__game_init()
 
         self.__change_scene(Scene.TITLE)
         pyxel.run(self.update, self.draw)
 
+    def __game_init(self):
+
+        # 岩関係
+        self.rocks = []
+        self.rock_interval = 0
+        self.rock_same_apper_count = 1
+        self.last_rock = 0
+
+        # 川の流れ関係
+        self.traveled_distance = 0 # 物理的に進んだ距離（カメラが動いた距離的な感じ）
+        self.flow_speed = 0.5 # 川の流れの速さ
+        self.flow_increase = 0 # カエルが進もうとしたときに追従する場合の、速度追加分
+
+        self.game_over = False
+
+        Background(self)
+        Player(self)
     
     def __change_scene(self, scene):
         """画面変更時に必ず行う初期化を行うメソッド
@@ -301,22 +322,93 @@ class Game:
             pass
 
     def __update_title(self):
+        if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+            self.__change_scene(Scene.PLAY)
+
         if pyxel.btnp(pyxel.KEY_RETURN):
             self.__change_scene(Scene.PLAY)
         
     def __update_play(self):
+
+        if self.game_over:
+            if pyxel.btnp(pyxel.KEY_RETURN):
+                self.__game_init()
+            return
+
         self.player.update()
         # カエルが空間の位置的に進んでいるときにカウントする
         self.traveled_distance += self.flow_increase
         # カエルが川の流れに対して進んでいるときにカウントする
         # self.traveled_distance += self.player.vy
 
+        # 岩の生成
         if self.last_rock + self.rock_interval < int(self.traveled_distance):
-            for _ in range(self.rock_same_apper_count):
-                Rock(self)
+            new_rock_x = []
+            while len(new_rock_x) < self.rock_same_apper_count:
+                new_x = pyxel.rndi(10, pyxel.width - 26)
+                if all(abs(e - new_x) > 16 for e in new_rock_x):
+                    Rock(self, new_x)
+                    new_rock_x.append(new_x)
+            # for _ in range(self.rock_same_apper_count):
+            #     new_x = pyxel.rndi(0, pyxel.width - 1)
+            #     if any(abs(e - new_x) == 16 for e in new_rock_x
+            #     Rock(self, pyxel.rndi(0, pyxel.width - 1))
+            
+            # 難易度調整
+            if int(self.traveled_distance) < 1:
+                self.rock_interval = 80
+            elif int(self.traveled_distance) < 100:
+                self.rock_interval = 80
+            elif int(self.traveled_distance) < 200:
+                self.rock_same_apper_count = 2
+            elif int(self.traveled_distance) < 300:
+                self.rock_interval = 70
+            elif int(self.traveled_distance) < 400:
+                self.rock_same_apper_count = 3
+                self.flow_speed = 1
+            elif int(self.traveled_distance) < 500:
+                self.flow_speed = 1.25
+            elif int(self.traveled_distance) < 600:
+                self.rock_interval = 60
+                pass
+            elif int(self.traveled_distance) < 700:
+                pass
+            elif int(self.traveled_distance) < 800:
+                pass
+            elif int(self.traveled_distance) < 900:
+                pass
+            elif int(self.traveled_distance) < 1000:
+                self.rock_interval = 50
+            elif int(self.traveled_distance) < 1100:
+                self.flow_speed = 2
+            elif int(self.traveled_distance) < 1200:
+                pass
+            elif int(self.traveled_distance) < 1300:
+                self.rock_interval = 40
+            elif int(self.traveled_distance) < 1400:
+                pass
+            elif int(self.traveled_distance) < 1500:
+                self.rock_same_apper_count = 4
+
             self.last_rock = int(self.traveled_distance)
+
         for rock in self.rocks:
             rock.update()
+
+        # 当たり判定
+        # カエルの四角
+        f_point = [
+            (self.player.x+2, self.player.y+2),# 左上
+            (self.player.x+16-2, self.player.y+2),# 右上
+            (self.player.x+3, self.player.y+16-1),# 左下
+            (self.player.x+16-3, self.player.y+16-1),# 右下
+        ]
+        for rock in self.rocks:
+            rx, ry, rw, rh = rock.get_hit_area()
+            for (px, py) in f_point:
+                if rx < px < rx+rw and ry < py < ry+rh:
+                    self.game_over = True
+
 
     def update(self):
         # Qキーで離脱
@@ -338,12 +430,17 @@ class Game:
         self.__draw_bush()
         size_x = 72
         size_y = 40
-        pyxel.rect(pyxel.width / 2 - size_x / 2, 40, size_x, size_y, 1)
-        msg = "GO FROG"
-        pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), pyxel.height / 2 - 10, msg, 7)
+        pyxel.dither(pyxel.frame_count / 60)
+        offset_list = [40,42,44,42]
+        offset = offset_list[(pyxel.frame_count // 30) % 4]
+        pyxel.blt(pyxel.width / 2 - size_x / 2, offset, 1, 0, 0, size_x, size_y, 12)
+        pyxel.dither(1)
+        # pyxel.rect(pyxel.width / 2 - size_x / 2, 40, size_x, size_y, 1)
+        # msg = "GO FROG"
+        # pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), pyxel.height / 2 - 10, msg, 7)
 
         msg = "enter to start"
-        pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), 100, msg, 7)
+        pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), 100, msg, 1)
 
     def __draw_play(self):
         
@@ -357,13 +454,24 @@ class Game:
         self.__draw_bush()
 
         # SCORE
-        pyxel.blt(8, 8, 0, 0, 32, 8, 16, 12)
-        for i in range(7):
-            pyxel.blt(16+(i*6), 8, 0, 5, 32, 6, 16, 12)
-        pyxel.blt(16+(6*7), 8, 0, 8, 32, 8, 16, 12)
+        # pyxel.blt(8, 8, 0, 0, 32, 8, 16, 12)
+        # for i in range(7):
+        #     pyxel.blt(16+(i*6), 8, 0, 5, 32, 6, 16, 12)
+        # pyxel.blt(16+(6*7), 8, 0, 8, 32, 8, 16, 12)
+
+        pyxel.dither(0.9)
+        pyxel.rect(0, 0, pyxel.width, 8, 4)
+        pyxel.dither(1)
+        pyxel.rectb(0, 0, pyxel.width, 9, 2)
 
         for i in range(1, -1, -1):
-            pyxel.text(13+i, 13+i, f"SCORE : {int(self.traveled_distance / 10)}", i if i else 7)
+            pyxel.text(13+i, 2+i, f"SCORE : {int(self.traveled_distance / 10)}", 1 if i else 7)
+
+
+        msg = "GAME OVER"
+        if self.game_over:
+            for i in range(1, -1, -1):
+                pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), 60+i, msg, 8 if i else 0)
 
     def __draw_bush(self):
         # offset = (pyxel.frame_count // 8) % 160
@@ -371,7 +479,7 @@ class Game:
         #     for x, y in self.near_cloud:
         #         pyxel.blt(x + i * 160 - offset, y, 0, 0, 32, 56, 8, 12)
         offset = self.traveled_distance % 16
-        pyxel.text(60,60,f"offset: {offset}", 1)
+        # pyxel.text(60,60,f"offset: {offset}", 1)
         for i in range(-1, pyxel.height // 16):
             #左
             pyxel.pal(3, 5)
@@ -396,7 +504,9 @@ class Game:
         elif self.scene == Scene.GAMEOVER:
             pass
             # self.__draw_gameover()
-        pyxel.text(20, 0, f"x: {self.player.x}, y:{self.player.y}", 1)
-        pyxel.text(20, 70, f"traveled_distance: {int(self.traveled_distance)}", 1)
-        pyxel.text(20, 80, f"bool: {int(self.traveled_distance) % 10}", 1)
+
+        # pyxel.text(20, 70, f"traveled_distance: {int(self.traveled_distance)}", 1)
+        # pyxel.text(20, 80, f"mouse_x: {pyxel.mouse_x}", 1)
+        # pyxel.text(20, 90, f"MOUSE_BUTTON_LEFT: {pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)}", 1)
 Game()
+pyxel.width / 2
