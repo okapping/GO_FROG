@@ -53,9 +53,19 @@ class Background:
             pyxel.line(x, y, x, y+h, 6)
 
         # 上のグラデーション
+        # 進み具合によって色をカエル
+        # if self.game.traveled_distance < 600:
+        #     col = 7
+        # elif self.game.traveled_distance < 1000:
+        #     col = 10
+        # elif self.game.traveled_distance < 1500:
+        #     col = 9
+        # else:
+        #     col = 8
+        col = 7
         for i in range(3):
             pyxel.dither(1-(i+1)*0.25)
-            pyxel.rect(0, 0+i*8, pyxel.width, 8, 7)
+            pyxel.rect(0, 0+i*8, pyxel.width, 8, col)
             pyxel.dither(1)
 
 class Scene(Enum):
@@ -271,7 +281,7 @@ class Player:
 
 class Game:
     WIDTH = 120
-    HEIGHT = 160
+    HEIGHT = 176
     def __init__(self):
         pyxel.init(self.WIDTH, self.HEIGHT, title="GO FROG")
 
@@ -304,6 +314,7 @@ class Game:
         self.flow_increase = 0 # カエルが進もうとしたときに追従する場合の、速度追加分
 
         self.game_over = False
+        self.game_over_count = 0
 
         Background(self)
         Player(self)
@@ -322,6 +333,8 @@ class Game:
             pass
 
     def __update_title(self):
+        if pyxel.frame_count < 30:
+            return
         if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
             self.__change_scene(Scene.PLAY)
 
@@ -331,10 +344,13 @@ class Game:
     def __update_play(self):
 
         if self.game_over:
-            if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
-                self.__game_init()
-            if pyxel.btnp(pyxel.KEY_RETURN):
-                self.__game_init()
+            if self.game_over_count > 30:
+                if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+                    self.__game_init()
+                if pyxel.btnp(pyxel.KEY_RETURN):
+                    self.__game_init()
+            
+            self.game_over_count += 1
             return
 
         self.player.update()
@@ -347,7 +363,7 @@ class Game:
         if self.last_rock + self.rock_interval < int(self.traveled_distance):
             new_rock_x = []
             while len(new_rock_x) < self.rock_same_apper_count:
-                new_x = pyxel.rndi(10, pyxel.width - 26)
+                new_x = pyxel.rndi(5, pyxel.width - 21)
                 if all(abs(e - new_x) > 16 for e in new_rock_x):
                     Rock(self, new_x)
                     new_rock_x.append(new_x)
@@ -360,18 +376,17 @@ class Game:
             elif int(self.traveled_distance) < 200:
                 self.rock_same_apper_count = 2
             elif int(self.traveled_distance) < 300:
-                self.rock_interval = 70
+                pass
             elif int(self.traveled_distance) < 400:
-                self.rock_same_apper_count = 3
                 self.flow_speed = 1
             elif int(self.traveled_distance) < 500:
                 self.flow_speed = 1.25
             elif int(self.traveled_distance) < 600:
-                self.rock_interval = 60
-                pass
+                self.rock_interval = 70
             elif int(self.traveled_distance) < 700:
-                pass
+                self.rock_same_apper_count = 3
             elif int(self.traveled_distance) < 800:
+                self.rock_interval = 60
                 pass
             elif int(self.traveled_distance) < 900:
                 pass
@@ -434,7 +449,7 @@ class Game:
         pyxel.blt(pyxel.width / 2 - size_x / 2, offset, 1, 0, 0, size_x, size_y, 12)
         pyxel.dither(1)
 
-        msg = "enter to start"
+        msg = "ENTER or TAP to START"
         pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), 100, msg, 1)
 
     def __draw_play(self):
@@ -504,4 +519,3 @@ class Game:
         # pyxel.text(20, 80, f"mouse_x: {pyxel.mouse_x}", 1)
         # pyxel.text(20, 90, f"MOUSE_BUTTON_LEFT: {pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)}", 1)
 Game()
-pyxel.width / 2
