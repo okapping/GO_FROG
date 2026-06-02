@@ -259,6 +259,8 @@ class Game:
         self.player = None
         # self.enemys = []
 
+        self.show_how_to = True
+
         # ゲームの初期化
         self.__game_init()
 
@@ -316,6 +318,14 @@ class Game:
                     self.__game_init()
             
             self.game_over_count += 1
+            return
+        
+        if self.show_how_to:
+            if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+                self.show_how_to = False
+
+            if pyxel.btnp(pyxel.KEY_RETURN):
+                self.show_how_to = False
             return
 
         self.player.update()
@@ -453,6 +463,49 @@ class Game:
         if self.game_over:
             for i in range(1, -1, -1):
                 pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), 60+i, msg, 8 if i else 0)
+
+        if self.show_how_to:
+            # 操作説明
+            pyxel.rect(14, 16, 92, 156, 6)
+            pyxel.rectb(14, 16, 92, 156, 1)
+
+            pyxel.text(18, 20, f"HOW TO PLAY", 1)
+            pyxel.line(18, 26, 20 + len("HOW TO PLAY") * pyxel.FONT_WIDTH, 26, 1)
+
+            pyxel.text(18, 28, f"[ PC ]", 1)
+            # pyxel.text(16, 54, f"KEY", 1)
+            pyxel.rect(26, 38, 22, 9, 10)
+            pyxel.rectb(26, 38, 22, 9, 1)
+            pyxel.text(33, 40, f"<-", 1)
+            pyxel.blt(30, 60, 0, 16, 0, 16, 16, 12)
+            pyxel.blt(24, 54, 0, 0, 48, 8, 8, 12)
+
+            pyxel.rect(66, 38, 22, 9, 14)
+            pyxel.rectb(66, 38, 22, 9, 1)
+            pyxel.text(73, 40, f"->", 1)
+            pyxel.blt(70, 60, 0, 16, 0, 16, 16, 12)
+            pyxel.blt(84, 54, 0, 0, 48, -8, 8, 12)
+
+            pyxel.text(18, 80, f"[ SMART PHONE ]", 1)
+            pyxel.rectb(38, 88, 40, 64, 1)
+            pyxel.pset(38, 88, 6)
+            pyxel.pset(77, 88, 6)
+            pyxel.pset(38, 151, 6)
+            pyxel.pset(77, 151, 6)
+            pyxel.rectb(40, 90, 36, 52, 1)
+            pyxel.circb(58, 146, 3, 1)
+            
+            pyxel.rect(42, 92, 15, 48, 10)
+            pyxel.rectb(42, 92, 15, 48, 1)
+            pyxel.text(46, 112, f"<-", 1)
+            pyxel.rect(59, 92, 15, 48, 14)
+            pyxel.rectb(59, 92, 15, 48, 1)
+            pyxel.text(63, 112, f"->", 1)
+
+            msg = "ENTER or TAP to START"
+            pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), pyxel.height-16, msg, pyxel.rndi(0, 15))
+
+
 
     def __draw_bush(self):
         # offset = (pyxel.frame_count // 8) % 160
