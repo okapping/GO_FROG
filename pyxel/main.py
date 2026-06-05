@@ -1,7 +1,5 @@
 import pyxel
-import json
-import time
-from enum import Enum
+import webbrowser
 
 # 背景クラス
 class Background:
@@ -60,10 +58,10 @@ class Background:
             pyxel.rect(0, 0+i*8, pyxel.width, 8, col)
             pyxel.dither(1)
 
-class Scene(Enum):
+class Scene():
     TITLE = 0
     PLAY = 1
-    GAMEOVER = 5
+
 
 class Rock:
 
@@ -261,6 +259,9 @@ class Game:
 
         self.show_how_to = True
 
+        #test
+        pyxel.mouse(True)
+        #test
         # ゲームの初期化
         self.__game_init()
 
@@ -311,6 +312,12 @@ class Game:
     def __update_play(self):
 
         if self.game_over:
+            if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and (pyxel.width / 2 - 8 <= pyxel.mouse_x <= pyxel.width / 2 - 8 + 16) and (102 <= pyxel.mouse_y <= 102+16):
+                # pyxel.width / 2 - 8, 102
+                link = f"https://twitter.com/intent/tweet?text=GO%20FROG%E3%82%92%E3%83%97%E3%83%AC%E3%82%A4%E3%81%97%E3%81%BE%E3%81%97%E3%81%9F%E3%80%82%0A%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{int(self.traveled_distance / 10)}%E7%82%B9%E3%81%A7%E3%81%97%E3%81%9F%E3%80%82%0A%23pyxel%20%23python"
+                webbrowser.open(link)
+                return
+
             if self.game_over_count > 30:
                 if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
                     self.__game_init()
@@ -459,10 +466,24 @@ class Game:
             pyxel.text(13+i, 2+i, f"SCORE : {int(self.traveled_distance / 10)}", 1 if i else 7)
 
 
-        msg = "GAME OVER"
         if self.game_over:
+            w = 60
+            h = 70
+            pyxel.rect(pyxel.width / 2 -  w / 2, pyxel.height / 2 - h / 2, w, h, 6)
+            pyxel.rectb(pyxel.width / 2 -  w / 2, pyxel.height / 2 - h / 2, w, h, 1)
+            # pyxel.rectb(14, 16, 92, 156, 1)
+            msg = "GAME OVER"
             for i in range(1, -1, -1):
-                pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), 60+i, msg, 8 if i else 0)
+                pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), 64+i, msg, 8 if i else 0)
+            msg = f"SCORE : {int(self.traveled_distance / 10)}"
+            pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), 80, msg, 1)
+            # width = pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2)
+            pyxel.line(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), 86, pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2) + len(msg) * pyxel.FONT_WIDTH, 86, 1)
+
+            msg = "SHARE"
+            pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), 94, msg, 1)
+            pyxel.blt(pyxel.width / 2 - 8, 102, 0, 16, 48, 16, 16, 7)
+
 
         if self.show_how_to:
             # 操作説明
@@ -539,7 +560,7 @@ class Game:
             pass
             # self.__draw_gameover()
 
-        # pyxel.text(20, 70, f"rocks count: {len(self.rocks)}", 1)
+        # pyxel.text(20, 70, f"bool: {(pyxel.width / 2 - 8 <= pyxel.mouse_x <= pyxel.width / 2 - 8 + 16) and (102 <= pyxel.mouse_y <= 102+16)}", 1)
         # pyxel.text(20, 70, f"traveled_distance: {int(self.traveled_distance)}", 1)
         # pyxel.text(20, 80, f"mouse_x: {pyxel.mouse_x}", 1)
         # pyxel.text(20, 90, f"MOUSE_BUTTON_LEFT: {pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)}", 1)
