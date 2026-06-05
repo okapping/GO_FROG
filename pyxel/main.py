@@ -260,7 +260,7 @@ class Game:
         self.show_how_to = True
 
         #test
-        pyxel.mouse(True)
+        # pyxel.mouse(True)
         #test
         # ゲームの初期化
         self.__game_init()
