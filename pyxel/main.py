@@ -306,8 +306,7 @@ class Game:
 
         if self.game_over:
             if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and (pyxel.width / 2 - 8 <= pyxel.mouse_x <= pyxel.width / 2 - 8 + 16) and (102 <= pyxel.mouse_y <= 102+16):
-                
-                link = f"https://twitter.com/intent/tweet?text=pyxel%E8%A3%BD%E3%82%B2%E3%83%BC%E3%83%A0%E3%80%8CGO%20FROG%E3%80%8D%E3%82%92%E3%83%97%E3%83%AC%E3%82%A4%E3%81%97%E3%81%BE%E3%81%97%E3%81%9F%E3%80%82%0A%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{int(self.traveled_distance / 10)}%E7%82%B9%E3%81%A7%E3%81%97%E3%81%9F%E3%80%82%0A%23pyxel%20%23python"
+                link = f"https://twitter.com/intent/tweet?text=pyxel%E8%A3%BD%E3%82%B2%E3%83%BC%E3%83%A0%E3%80%8CGO%20FROG%E3%80%8D%E3%82%92%E3%83%97%E3%83%AC%E3%82%A4%E3%81%97%E3%81%BE%E3%81%97%E3%81%9F%E3%80%82%0A%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{int(self.traveled_distance / 10)}%E7%82%B9%EF%BC%81%0A%23GO_FROG%20%23pyxel%20%23python%0A"
                 webbrowser.open(link)
                 return
 
