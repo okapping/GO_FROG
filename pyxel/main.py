@@ -1,5 +1,6 @@
 import pyxel
 import webbrowser
+from device_checker import DeviceChecker
 
 # 背景クラス
 class Background:
@@ -38,8 +39,6 @@ class Background:
 
         # 水の線を描画する
         for x, y, h in self.lines:
-            # color = 7 if speed > 1.8 else 6  # 速度に応じて色を変える
-            # pyxel.pset(x, y, color)
             pyxel.line(x, y, x, y+h, 6)
 
         # 上のグラデーション
@@ -175,8 +174,6 @@ class Player:
                 self.vy = 0
                 if self.y < self.LIMIT_LINE:
                     self.game.flow_increase = 0
-                # else:
-                #     self.y -= self.vy
 
                 self.is_jumping_dir = None
 
@@ -247,6 +244,7 @@ class Game:
     HEIGHT = 176
     def __init__(self):
         pyxel.init(self.WIDTH, self.HEIGHT, title="GO FROG")
+        self.deviceChecker = DeviceChecker()
 
         pyxel.load("asset.pyxres")
 
@@ -269,7 +267,7 @@ class Game:
         pyxel.run(self.update, self.draw)
 
     def __game_init(self):
-
+        pyxel.mouse(False)
         # 岩関係
         self.rocks = []
         self.rock_interval = 0
@@ -291,49 +289,46 @@ class Game:
         """画面変更時に必ず行う初期化を行うメソッド
         """
         self.scene = scene
-        if self.scene == Scene.TITLE:
-            pass
-
-        elif self.scene == Scene.PLAY:
-            pass
-
-        elif self.scene == Scene.GAMEOVER:
-            pass
 
     def __update_title(self):
         if pyxel.frame_count < 30:
             return
-        if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
-            self.__change_scene(Scene.PLAY)
 
-        if pyxel.btnp(pyxel.KEY_RETURN):
-            self.__change_scene(Scene.PLAY)
+        if self.deviceChecker.is_pc():
+            if pyxel.btnp(pyxel.KEY_RETURN):
+                self.__change_scene(Scene.PLAY)
+        else:
+            if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+                self.__change_scene(Scene.PLAY)
+
         
     def __update_play(self):
 
         if self.game_over:
             if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and (pyxel.width / 2 - 8 <= pyxel.mouse_x <= pyxel.width / 2 - 8 + 16) and (102 <= pyxel.mouse_y <= 102+16):
-                # pyxel.width / 2 - 8, 102
                 
                 link = f"https://twitter.com/intent/tweet?text=pyxel%E8%A3%BD%E3%82%B2%E3%83%BC%E3%83%A0%E3%80%8CGO%20FROG%E3%80%8D%E3%82%92%E3%83%97%E3%83%AC%E3%82%A4%E3%81%97%E3%81%BE%E3%81%97%E3%81%9F%E3%80%82%0A%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AF{int(self.traveled_distance / 10)}%E7%82%B9%E3%81%A7%E3%81%97%E3%81%9F%E3%80%82%0A%23pyxel%20%23python"
                 webbrowser.open(link)
                 return
 
             if self.game_over_count > 30:
-                if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
-                    self.__game_init()
-                if pyxel.btnp(pyxel.KEY_RETURN):
-                    self.__game_init()
+                if self.deviceChecker.is_pc():
+                    if pyxel.btnp(pyxel.KEY_RETURN):
+                        self.__game_init()
+                else:
+                    if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+                        self.__game_init()
             
             self.game_over_count += 1
             return
         
         if self.show_how_to:
-            if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
-                self.show_how_to = False
-
-            if pyxel.btnp(pyxel.KEY_RETURN):
-                self.show_how_to = False
+            if self.deviceChecker.is_pc():
+                if pyxel.btnp(pyxel.KEY_RETURN):
+                    self.show_how_to = False
+            else:
+                if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+                    self.show_how_to = False
             return
 
         self.player.update()
@@ -407,6 +402,8 @@ class Game:
             for (px, py) in f_point:
                 if rx < px < rx+rw and ry < py < ry+rh:
                     self.game_over = True
+                    if self.deviceChecker.is_pc():
+                        pyxel.mouse(True)
 
 
     def update(self):
@@ -418,11 +415,7 @@ class Game:
         if self.scene == Scene.TITLE:
             self.__update_title()
         elif self.scene == Scene.PLAY:
-            pass
             self.__update_play()
-        elif self.scene == Scene.GAMEOVER:
-            pass
-
 
     def __draw_title(self):
 
@@ -435,11 +428,11 @@ class Game:
         pyxel.blt(pyxel.width / 2 - size_x / 2, offset, 1, 0, 0, size_x, size_y, 12)
         pyxel.dither(1)
 
-        msg = "ENTER or TAP to START"
+        if self.deviceChecker.is_pc():
+            msg = "ENTER to START"
+        else:
+            msg = "TAP to START"
         pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), 100, msg, 1)
-
-        # msg = "2026 okapping"
-        # pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), pyxel.height-8, msg, 1)
 
     def __draw_play(self):
         
@@ -453,15 +446,9 @@ class Game:
         self.__draw_bush()
 
         # SCORE
-        # pyxel.blt(8, 8, 0, 0, 32, 8, 16, 12)
-        # for i in range(7):
-        #     pyxel.blt(16+(i*6), 8, 0, 5, 32, 6, 16, 12)
-        # pyxel.blt(16+(6*7), 8, 0, 8, 32, 8, 16, 12)
-
         pyxel.dither(0.9)
         pyxel.rect(0, 0, pyxel.width, 9, 1)
         pyxel.dither(1)
-        # pyxel.rectb(0, 0, pyxel.width, 9, 6)
 
         for i in range(1, -1, -1):
             pyxel.text(13+i, 2+i, f"SCORE : {int(self.traveled_distance / 10)}", 1 if i else 7)
@@ -472,13 +459,11 @@ class Game:
             h = 70
             pyxel.rect(pyxel.width / 2 -  w / 2, pyxel.height / 2 - h / 2, w, h, 6)
             pyxel.rectb(pyxel.width / 2 -  w / 2, pyxel.height / 2 - h / 2, w, h, 1)
-            # pyxel.rectb(14, 16, 92, 156, 1)
             msg = "GAME OVER"
             for i in range(1, -1, -1):
                 pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), 64+i, msg, 8 if i else 0)
             msg = f"SCORE : {int(self.traveled_distance / 10)}"
             pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), 80, msg, 1)
-            # width = pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2)
             pyxel.line(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), 86, pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2) + len(msg) * pyxel.FONT_WIDTH, 86, 1)
 
             msg = "SHARE"
@@ -495,7 +480,6 @@ class Game:
             pyxel.line(18, 26, 20 + len("HOW TO PLAY") * pyxel.FONT_WIDTH, 26, 1)
 
             pyxel.text(18, 28, f"[ PC ]", 1)
-            # pyxel.text(16, 54, f"KEY", 1)
             pyxel.rect(26, 38, 22, 9, 10)
             pyxel.rectb(26, 38, 22, 9, 1)
             pyxel.text(33, 40, f"<-", 1)
@@ -524,18 +508,22 @@ class Game:
             pyxel.rectb(59, 92, 15, 48, 1)
             pyxel.text(63, 112, f"->", 1)
 
-            msg = "ENTER or TAP to START"
-            pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), pyxel.height-16, msg, pyxel.rndi(0, 15))
+            if self.deviceChecker.is_pc():
+                msg = "ENTER to START"
+            else:
+                msg = "TAP to START"
+            pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), pyxel.height-16, msg, 1)
 
+        if self.game_over_count > 30:
+            if self.deviceChecker.is_pc():
+                msg = "ENTER to RESTART"
+            else:
+                msg = "TAP to RESTART"
+            pyxel.text(pyxel.width / 2 - (len(msg) * pyxel.FONT_WIDTH // 2), pyxel.height-16, msg, 1)
 
 
     def __draw_bush(self):
-        # offset = (pyxel.frame_count // 8) % 160
-        # for i in range(2):
-        #     for x, y in self.near_cloud:
-        #         pyxel.blt(x + i * 160 - offset, y, 0, 0, 32, 56, 8, 12)
         offset = self.traveled_distance % 16
-        # pyxel.text(60,60,f"offset: {offset}", 1)
         for i in range(-1, pyxel.height // 16):
             #左
             pyxel.pal(3, 5)
@@ -552,17 +540,9 @@ class Game:
         pyxel.cls(12)
 
         self.background.draw()
-        # pyxel.text(4, 12, "in draw", 7)
         if self.scene == Scene.TITLE:
             self.__draw_title()
         elif self.scene == Scene.PLAY:
             self.__draw_play()
-        elif self.scene == Scene.GAMEOVER:
-            pass
-            # self.__draw_gameover()
-
-        # pyxel.text(20, 70, f"bool: {(pyxel.width / 2 - 8 <= pyxel.mouse_x <= pyxel.width / 2 - 8 + 16) and (102 <= pyxel.mouse_y <= 102+16)}", 1)
-        # pyxel.text(20, 70, f"traveled_distance: {int(self.traveled_distance)}", 1)
-        # pyxel.text(20, 80, f"mouse_x: {pyxel.mouse_x}", 1)
         # pyxel.text(20, 90, f"MOUSE_BUTTON_LEFT: {pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)}", 1)
 Game()
